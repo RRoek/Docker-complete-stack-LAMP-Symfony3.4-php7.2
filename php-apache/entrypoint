@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e #if a command fail, exit
+
+
+#Add librdkafka
+curl -L 'https://github.com/edenhill/librdkafka/archive/v0.9.2-RC1.tar.gz' -o /home/www-data/dev/v0.9.2-RC1.tar.gz --
+tar xzf /home/www-data/dev/v0.9.2-RC1.tar.gz  -C /home/www-data/dev/
+#./configure --prefix=/usr
+make -j -f /home/www-data/dev/librdkafka-0.9.2-RC1/Makefile
+make -f /home/www-data/dev/librdkafka-0.9.2-RC1/Makefile install
+#On recherche le répertoire
+chemin_lib=$(/usr/local/bin/php-config --extension-dir)
+#On configure le php.ini
+extension=$chemin_lib/rdkafka.so
+echo "extension=rdkafka.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+#
+#
+##Add librdkafka
+#curl -L 'https://github.com/edenhill/librdkafka/archive/v0.9.2-RC1.tar.gz' -o /home/www-data/dev/v0.9.2-RC1.tar.gz --
+#tar xzf /home/www-data/dev/v0.9.2-RC1.tar.gz  -C /home/www-data/dev/
+#./configure --prefix=/usr
+#make -j -f /home/www-data/dev/librdkafka-0.9.2-RC1/Makefile
+#make -f /home/www-data/dev/librdkafka-0.9.2-RC1/Makefile install
+#extension=$(/usr/local/bin/php-config --extension-dir)/rdkafka.so

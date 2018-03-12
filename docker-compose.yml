@@ -1,0 +1,101 @@
+version: '2'
+
+services:
+  app:
+    image: busybox
+    container_name: your_company-client_app
+    volumes:
+      - ./../your_company-client/:/var/www/html/YourCompany/your_company-client/
+    networks:
+      - project
+
+  mailcatcher:
+    image: yappabe/mailcatcher
+    ports:
+        - 1025:1025
+        - 1080:1080
+    networks:
+      - project
+
+  apache:
+    build: ./php-apache
+    environment:
+      - SYMFONY_ENV=dev
+      - SYMFONY_DEBUG=true
+      - SYMFONY_HIDE_DEPRECATED=false
+      - TZ=Europe/Paris
+    ports:
+      - 8280:80
+    container_name: your_company-client_apache
+    networks:
+      - project
+    volumes:
+      - ./php-apache/conf/:/etc/apache2/sites-available/
+      - ./php-apache/conf/:/etc/apache2/sites-enabled/
+    volumes_from:
+      - app
+
+  portainer:
+    image: portainer/portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    command: -H unix:///var/run/docker.sock --no-auth
+    ports:
+      - "9000:9000"
+    restart: always
+
+  elasticsearch:
+    build:
+      context: elasticsearch/
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+
+  logstash:
+    build:
+      context: logstash/
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5000:5000"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    build:
+      context: kibana/
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+networks:
+  project:
+    external:
+      name: your_company-client
+
+  elk:
+    driver: bridge
+
+volumes:
+  app:
+    driver: local
+  portainer_data:
+#  apicache: {}
+#  apilog: {}
